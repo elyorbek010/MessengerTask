@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
+#include <stdexcept>
 #include <vector>
 #include <bitset>
 #include <iostream>
@@ -8,6 +9,62 @@
 
 #define HEADER_SIZE (2)
 #define MAX_MESSAGE_SIZE (31)
+
+TEST_CASE("EmptyName", "MakeBuff") {
+	std::string name("");
+	std::string message("Hi");
+
+	try 
+	{
+		const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, message));
+	}
+	catch (const std::length_error& error) {
+		std::cout << error.what() << std::endl;
+	}
+}
+
+TEST_CASE("EmptyMessage", "MakeBuff") {
+	std::string name("Elyorbek");
+	std::string message("");
+
+	try
+	{
+		const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, message));
+	}
+	catch (const std::length_error& error) {
+		std::cout << error.what() << std::endl;
+	}
+}
+
+TEST_CASE("NameLimit", "MakeBuff") {
+	std::string name("ElyorbekElyorbek");
+	std::string message("Hi");
+
+	try
+	{
+		const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, message));
+	}
+	catch (const std::length_error& error) {
+		std::cout << error.what() << std::endl;
+	}
+}
+
+TEST_CASE("CRCCheck", "ParseBuff") {
+	std::string name("Elyorbek");
+	std::string text("Hi");
+
+	const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, text));
+	std::vector<uint8_t> buff_cpy = buff;
+
+	buff_cpy[1] &= 0xf0; // clear crc field
+
+	try {
+		const messenger::msg_t& message = messenger::parse_buff(buff_cpy);
+	}
+	catch (const std::runtime_error& error) {
+		std::cout << error.what() << std::endl;
+	}
+}
 
 TEST_CASE("1PacketTestMakeBuff", "MakeBuff") {
 	std::string name("Elyorbek");
