@@ -1,13 +1,13 @@
 ﻿// task1_messenger.cpp : Defines the entry point for the application.
 //
-#include "task1_messenger.hpp"
 #include <bitset>
 #include <cassert>
 
 #include <iostream>
 #define CRCPP_INCLUDE_ESOTERIC_CRC_DEFINITIONS
 
-#include "CRC.h"
+#include "../inc/task1_messenger.hpp"
+#include "../inc/CRC.h"
 
 #define FLAG_LEN (3)		// in bits
 #define FLAG_VAL (0b101)

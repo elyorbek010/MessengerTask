@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_library (MessengerTask "task1_messenger.cpp")
+add_library (MessengerTask "src/task1_messenger.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET MessengerTask PROPERTY CXX_STANDARD 20)
@@ -20,5 +20,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(messenger_tests messenger_test.cpp)
+#FetchContent_Declare(
+#	CRCpp
+#	GIT_REPOSITORY	https://github.com/d-bahr/CRCpp.git
+#	GIT_TAG			release-1.2.0.0
+#)
+
+#FetchContent_MakeAvailable(CRCpp)
+
+add_executable(messenger_tests "test/messenger_test.cpp")
 target_link_libraries(messenger_tests PRIVATE Catch2::Catch2WithMain PRIVATE MessengerTask)

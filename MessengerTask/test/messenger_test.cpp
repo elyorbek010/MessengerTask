@@ -5,7 +5,7 @@
 #include <bitset>
 #include <iostream>
 
-#include "task1_messenger.hpp"
+#include "../inc/task1_messenger.hpp"
 
 #define HEADER_SIZE (2)
 #define MAX_MESSAGE_SIZE (31)
