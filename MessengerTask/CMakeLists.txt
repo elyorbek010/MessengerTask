@@ -20,13 +20,16 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-#FetchContent_Declare(
-#	CRCpp
-#	GIT_REPOSITORY	https://github.com/d-bahr/CRCpp.git
-#	GIT_TAG			release-1.2.0.0
-#)
+FetchContent_Declare(
+	CRCpp
+	GIT_REPOSITORY	https://github.com/d-bahr/CRCpp.git
+	GIT_TAG			release-1.2.0.0
+)
 
-#FetchContent_MakeAvailable(CRCpp)
+FetchContent_MakeAvailable(CRCpp)
+target_link_libraries(MessengerTask PRIVATE CRCpp)
+target_include_directories(MessengerTask PRIVATE inc)
 
 add_executable(messenger_tests "test/messenger_test.cpp")
 target_link_libraries(messenger_tests PRIVATE Catch2::Catch2WithMain PRIVATE MessengerTask)
+target_include_directories(messenger_tests PRIVATE inc)

@@ -6,8 +6,8 @@
 #include <iostream>
 #define CRCPP_INCLUDE_ESOTERIC_CRC_DEFINITIONS
 
-#include "../inc/task1_messenger.hpp"
-#include "../inc/CRC.h"
+#include "task1_messenger.hpp"
+#include "CRC.h"
 
 #define FLAG_LEN (3)		// in bits
 #define FLAG_VAL (0b101)
