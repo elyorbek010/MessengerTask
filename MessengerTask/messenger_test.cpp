@@ -9,7 +9,7 @@
 #define HEADER_SIZE (2)
 #define MAX_MESSAGE_SIZE (31)
 
-TEST_CASE("1PacketTest", "MakeBuff") {
+TEST_CASE("1PacketTestMakeBuff", "MakeBuff") {
 	std::string name("Elyorbek");
 	std::string message("Hi");
 
@@ -33,11 +33,11 @@ TEST_CASE("1PacketTest", "MakeBuff") {
 		REQUIRE(buff[HEADER_SIZE + name.size() + i] == message[i]);
 }
 
-TEST_CASE("2PacketTest", "MakeBuff") {
+TEST_CASE("2PacketTestMakeBuff", "MakeBuff") {
 	std::string name("Elyorbek");
-	std::string message("This is a pretty long text that takes 2 packets");
+	std::string text("This is a pretty long text that takes 2 packets");
 
-	const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, message));
+	const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, text));
 	// PACKET 1
 	// flag			5  = 0b101
 	// namelen		8  = 0b1000
@@ -64,7 +64,7 @@ TEST_CASE("2PacketTest", "MakeBuff") {
 			REQUIRE(buff[HEADER_SIZE + i] == name[i]);
 
 		for (size_t i = 0; i < MAX_MESSAGE_SIZE; i++)
-			REQUIRE(buff[HEADER_SIZE + name.size() + i] == message[i]);
+			REQUIRE(buff[HEADER_SIZE + name.size() + i] == text[i]);
 	}
 
 	SECTION("Packet number 2") {
@@ -76,8 +76,33 @@ TEST_CASE("2PacketTest", "MakeBuff") {
 		for (size_t i = 0; i < name.size(); i++)
 			REQUIRE(buff[2 * HEADER_SIZE + name.size() + MAX_MESSAGE_SIZE + i] == name[i]);
 
-		for (size_t i = 0; i < message.size() - MAX_MESSAGE_SIZE; i++)
-			REQUIRE(buff[2 * HEADER_SIZE + 2 * name.size() + MAX_MESSAGE_SIZE + i] == message[MAX_MESSAGE_SIZE + i]);
+		for (size_t i = 0; i < text.size() - MAX_MESSAGE_SIZE; i++)
+			REQUIRE(buff[2 * HEADER_SIZE + 2 * name.size() + MAX_MESSAGE_SIZE + i] == text[MAX_MESSAGE_SIZE + i]);
 	}
 }
 
+TEST_CASE("1PacketTestParseBuff", "ParseBuff") {
+	std::string name("Elyorbek");
+	std::string text("Hi");
+
+	const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, text));
+	std::vector<uint8_t> buff_cpy = buff;
+
+	const messenger::msg_t& message = messenger::parse_buff(buff_cpy);
+
+	REQUIRE(message.name == name);
+	REQUIRE(message.text == text);
+}
+
+TEST_CASE("2PacketTestParseBuff", "ParseBuff") {
+	std::string name("Elyorbek");
+	std::string text("This is a pretty long text that takes 2 packets");
+
+	const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, text));
+	std::vector<uint8_t> buff_cpy = buff;
+
+	const messenger::msg_t& message = messenger::parse_buff(buff_cpy);
+
+	REQUIRE(message.name == name);
+	REQUIRE(message.text == text);
+}
