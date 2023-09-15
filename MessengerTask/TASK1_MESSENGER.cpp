@@ -93,3 +93,62 @@ std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg) {
 
 	return buff;
 }
+
+static void get_header(uint8_t high_byte, uint8_t low_byte, uint8_t& flag, uint8_t& namelen, uint8_t& textlen, uint8_t& crc4) {
+	uint16_t header(high_byte);//uint16_t(high_byte) << 8 + low_byte);
+	header <<= 8;
+	header += low_byte;
+	std::bitset<16> header_bits(header);
+	//std::cout << header_bits << std::endl;
+	crc4 = (header & 0x000f) >> (16 - FLAG_LEN - NAMELEN_LEN - TEXTLEN_LEN - CRC4_LEN);
+	textlen = (header & 0x01f0) >> (16 - FLAG_LEN - NAMELEN_LEN - TEXTLEN_LEN);
+	namelen = (header & 0x1e00) >> (16 - FLAG_LEN - NAMELEN_LEN);
+	flag = (header & 0xe000) >> (16 - FLAG_LEN);
+}
+
+messenger::msg_t messenger::parse_buff(std::vector<uint8_t>& buff) {
+	uint8_t flag;
+	uint8_t namelen;
+	uint8_t textlen;
+	uint8_t crc4;
+	size_t packet_n(0);
+
+	uint8_t crc(0);
+	uint8_t pos(0);
+
+	for (int i = 0; i < buff.size(); i++) {
+		//std::cout << buff[i];
+	}
+	//std::cout << std::endl;
+
+	size_t buff_size = buff.size();
+	if (buff_size < 2)
+		throw std::runtime_error("error: invalid buffer");
+
+	get_header(buff[pos + 0], buff[pos + 1], flag, namelen, textlen, crc4);
+	messenger::msg_t msg("", "");
+	for (int i = 0; i < namelen; i++)
+		msg.name += buff[2 + i];
+	//std::cout << "message name: " << msg.name << std::endl;
+	while (buff.size() > pos) {
+		//std::cout << (int)buff.size() << " " << (int)pos << std::endl;
+		get_header(buff[pos + 0], buff[pos + 1], flag, namelen, textlen, crc4);
+
+		if (flag != FLAG_VAL)
+			throw std::runtime_error("error: invalid flag");
+
+		buff[pos + 1] &= 0xf0;
+		crc = CRC::Calculate(static_cast<void*>(&(buff[pos + 0])), HEADER_LEN / CHAR_BIT + namelen + textlen, CRC::CRC_4_ITU());
+		//std::cout << "crc: " << (int)crc << std::endl;
+		if (crc4 != crc)
+			throw std::runtime_error("error: invalid crc");
+
+		for (int i = 0; i < textlen; i++)
+			msg.text += buff[pos + 2 + namelen + i];
+
+		packet_n++;
+		pos = packet_n * (MAX_MSG_LEN + namelen + HEADER_LEN / CHAR_BIT);
+	}
+
+	return msg;
+}
