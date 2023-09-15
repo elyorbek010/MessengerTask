@@ -19,10 +19,10 @@ TEST_CASE("1PacketTestMakeBuff", "MakeBuff") {
 	// msglen		2  = 0b00010
 	// crc4			10 = 0b1010
 	// header 1011 0000 0010 1010
-	unsigned long correct_header = 0b1011000000101010;
+	unsigned short correct_header = 0b1011000000101010;
 
-	unsigned long buffer_header = (static_cast<unsigned long>(buff[0]) << 8) + 
-								  (static_cast<unsigned long>(buff[1]));
+	unsigned short buffer_header = (static_cast<unsigned short>(buff[0]) << 8) +
+								  (static_cast<unsigned short>(buff[1]));
 
     REQUIRE(buffer_header == correct_header);
 
@@ -55,8 +55,8 @@ TEST_CASE("2PacketTestMakeBuff", "MakeBuff") {
 	unsigned long correct_header_2 = 0b1011000100001011;
 
 	SECTION("Packet number 1") {
-		unsigned long buffer_header_1 = (static_cast<unsigned long>(buff[0]) << 8) +
-			(static_cast<unsigned long>(buff[1]));
+		unsigned short buffer_header_1 = (static_cast<unsigned short>(buff[0]) << 8) +
+			(static_cast<unsigned short>(buff[1]));
 
 		REQUIRE(buffer_header_1 == correct_header_1);
 
@@ -68,8 +68,8 @@ TEST_CASE("2PacketTestMakeBuff", "MakeBuff") {
 	}
 
 	SECTION("Packet number 2") {
-		unsigned long buffer_header_2 = (static_cast<unsigned long>(buff[41]) << 8) +
-			(static_cast<unsigned long>(buff[42]));
+		unsigned short buffer_header_2 = (static_cast<unsigned short>(buff[41]) << 8) +
+			(static_cast<unsigned short>(buff[42]));
 
 		REQUIRE(buffer_header_2 == correct_header_2);
 
