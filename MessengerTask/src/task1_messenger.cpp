@@ -141,7 +141,7 @@ messenger::msg_t messenger::parse_buff(std::vector<uint8_t>& buff)
 	msg.name.assign(buff.begin() + HEADER_SIZE, buff.begin() + HEADER_SIZE + namelen); 
 
 	// Read packets and append messages to msg.text
-	for (size_t packet_n = 0; packet_n < buff.size() / max_packet_len + 1; packet_n++)
+	for (size_t packet_n = 0; packet_n < buff.size() / max_packet_len + (buff.size() % max_packet_len != 0); packet_n++)
 	{
 		unpack_header(buff_iter, flag, namelen, textlen, header_crc);
 
