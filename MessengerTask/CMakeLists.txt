@@ -27,9 +27,10 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(CRCpp)
+
 target_link_libraries(MessengerTask PRIVATE CRCpp)
 target_include_directories(MessengerTask PRIVATE inc)
 
 add_executable(messenger_tests "test/messenger_test.cpp")
-target_link_libraries(messenger_tests PRIVATE Catch2::Catch2WithMain PRIVATE MessengerTask)
+target_link_libraries(messenger_tests PRIVATE Catch2::Catch2WithMain PRIVATE MessengerTask PRIVATE CRCpp)
 target_include_directories(messenger_tests PRIVATE inc)
