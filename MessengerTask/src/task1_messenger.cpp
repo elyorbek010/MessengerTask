@@ -26,18 +26,39 @@
 
 #define N_BIT_MASK(num) (0xffff >> (16 - num))
 
-class SplitText {
+class Text {
+private:
+	std::string::iterator begin_iter;
+	std::string::iterator end_iter;
+
 public:
-	std::string::iterator begin;
-	std::string::iterator end;
+	Text(std::string::iterator begin, std::string::iterator end) {
+		begin_iter = begin;
+		end_iter = end;
+	}
+	std::string::iterator begin() {
+		return begin_iter;
+	}
+
+	std::string::iterator end() {
+		return end_iter;
+	}
+
+	std::string::const_iterator cbegin() const {
+		return begin_iter;
+	}
+
+	std::string::const_iterator cend() const {
+		return end_iter;
+	}
 };
 
-std::vector<SplitText> text_splitter(std::string& text, uint8_t splits_length) {
-	std::vector<SplitText> text_splits;
+std::vector<Text> text_splitter(std::string& text, uint8_t split_length) {
+	std::vector<Text> text_splits;
 
 	std::string::iterator begin = text.begin(), end = begin;
 	while (end != text.end()) {
-		if (end - begin == splits_length) {
+		if (end - begin == split_length) {
 			text_splits.push_back({ begin, end });
 			begin = end;
 		}
