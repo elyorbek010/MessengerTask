@@ -32,10 +32,11 @@ private:
 	std::string::iterator end_iter;
 
 public:
-	Text(std::string::iterator begin, std::string::iterator end) {
-		begin_iter = begin;
-		end_iter = end;
-	}
+	Text(std::string::iterator begin, std::string::iterator end)
+		: begin_iter(begin)
+		, end_iter(end)
+	{ }
+
 	std::string::iterator begin() {
 		return begin_iter;
 	}
@@ -70,6 +71,82 @@ std::vector<Text> text_splitter(std::string& text, uint8_t split_length) {
 
 	return text_splits;
 }
+
+class Packet {
+private:
+	uint8_t flag;
+	uint8_t namelen;
+	uint8_t msglen;
+	uint8_t crc4;
+
+	std::string name;
+	std::string message;
+
+public:
+	Packet() {}
+
+	Packet(std::string name, std::string::const_iterator msg_begin, std::string::const_iterator msg_end) {
+		if (name.empty()) throw std::length_error("error: name cannot be empty");
+		if (name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
+		if (msg_end - msg_begin > MAX_MSG_LEN) throw std::length_error("error: message is too long");
+		if (msg_end == msg_begin) throw std::length_error("error: message cannot be empty");
+
+		flag = FLAG_VAL;
+		this->name = name;
+		namelen = name.size();
+		message.assign(msg_begin, msg_end);
+		msglen = message.size();
+		crc4 = CRC_PLACEHOLDER;
+	}
+
+	void set_flag(uint8_t flag) {
+		// no checking because put manually, for testing purposes
+		this->flag = flag;
+	}
+	void set_name(std::string name) {
+		if (name.empty()) throw std::length_error("error: name cannot be empty");
+		if (name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
+
+		this->name = name;
+	}
+
+	void set_name(std::string::const_iterator name_begin, std::string::const_iterator name_end) {
+		if (name_end == name_begin) throw std::length_error("error: name cannot be empty");
+		if (name_end - name_begin > MAX_NAME_LEN) throw std::length_error("error: name is too long");
+
+		name.assign(name_begin, name_end);
+	}
+
+	void set_message(std::string message) {
+		if (message.empty()) throw std::length_error("error: message cannot be empty");
+		if (message.size() > MAX_MSG_LEN) throw std::length_error("error: message is too long");
+
+		this->message = message;
+	}
+
+	void set_message(std::string::const_iterator msg_begin, std::string::const_iterator msg_end) {
+		if (msg_end == msg_begin) throw std::length_error("error: message cannot be empty");
+		if (msg_end - msg_begin > MAX_MSG_LEN) throw std::length_error("error: message is too long");
+
+		message.assign(msg_begin, msg_end);
+	}
+
+	uint8_t get_flag() {
+		return flag;
+	}
+
+	std::string get_name() {
+		return name;
+	}
+
+	std::string get_message() {
+		return message;
+	}
+
+	uint8_t get_crc4() {
+		return crc4;
+	}
+};
 
 static uint16_t pack_header(uint8_t flag, uint8_t namelen, uint8_t textlen, uint8_t crc4) 
 {
