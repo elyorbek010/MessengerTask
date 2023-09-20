@@ -28,22 +28,14 @@
 
 class Text {
 private:
-	std::string::iterator begin_iter;
-	std::string::iterator end_iter;
+	std::string::const_iterator begin_iter;
+	std::string::const_iterator end_iter;
 
 public:
-	Text(std::string::iterator begin, std::string::iterator end)
+	Text(std::string::const_iterator begin, std::string::const_iterator end)
 		: begin_iter(begin)
 		, end_iter(end)
 	{ }
-
-	std::string::iterator begin() {
-		return begin_iter;
-	}
-
-	std::string::iterator end() {
-		return end_iter;
-	}
 
 	std::string::const_iterator cbegin() const {
 		return begin_iter;
@@ -54,11 +46,12 @@ public:
 	}
 };
 
-std::vector<Text> text_splitter(std::string& text, uint8_t split_length) {
+std::vector<Text> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
+	assert(text_begin != text_end);
 	std::vector<Text> text_splits;
 
-	std::string::iterator begin = text.begin(), end = begin;
-	while (end != text.end()) {
+	std::string::const_iterator begin = text_begin, end = text_begin;
+	while (end != text_end) {
 		if (end - begin == split_length) {
 			text_splits.push_back({ begin, end });
 			begin = end;
@@ -73,7 +66,7 @@ std::vector<Text> text_splitter(std::string& text, uint8_t split_length) {
 }
 
 class Packet {
-private:
+public:
 	uint8_t flag;
 	uint8_t namelen;
 	uint8_t msglen;
@@ -81,9 +74,8 @@ private:
 
 	std::string name;
 	std::string message;
-
+	
 public:
-	Packet() {}
 
 	Packet(std::string name, std::string::const_iterator msg_begin, std::string::const_iterator msg_end) {
 		if (name.empty()) throw std::length_error("error: name cannot be empty");
@@ -97,54 +89,6 @@ public:
 		message.assign(msg_begin, msg_end);
 		msglen = message.size();
 		crc4 = CRC_PLACEHOLDER;
-	}
-
-	void set_flag(uint8_t flag) {
-		// no checking because put manually, for testing purposes
-		this->flag = flag;
-	}
-	void set_name(std::string name) {
-		if (name.empty()) throw std::length_error("error: name cannot be empty");
-		if (name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
-
-		this->name = name;
-	}
-
-	void set_name(std::string::const_iterator name_begin, std::string::const_iterator name_end) {
-		if (name_end == name_begin) throw std::length_error("error: name cannot be empty");
-		if (name_end - name_begin > MAX_NAME_LEN) throw std::length_error("error: name is too long");
-
-		name.assign(name_begin, name_end);
-	}
-
-	void set_message(std::string message) {
-		if (message.empty()) throw std::length_error("error: message cannot be empty");
-		if (message.size() > MAX_MSG_LEN) throw std::length_error("error: message is too long");
-
-		this->message = message;
-	}
-
-	void set_message(std::string::const_iterator msg_begin, std::string::const_iterator msg_end) {
-		if (msg_end == msg_begin) throw std::length_error("error: message cannot be empty");
-		if (msg_end - msg_begin > MAX_MSG_LEN) throw std::length_error("error: message is too long");
-
-		message.assign(msg_begin, msg_end);
-	}
-
-	uint8_t get_flag() {
-		return flag;
-	}
-
-	std::string get_name() {
-		return name;
-	}
-
-	std::string get_message() {
-		return message;
-	}
-
-	uint8_t get_crc4() {
-		return crc4;
 	}
 };
 
@@ -173,51 +117,34 @@ static uint16_t pack_header(uint8_t flag, uint8_t namelen, uint8_t textlen, uint
 
 std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg)
 {
-	std::string::const_iterator name_iter = msg.name.begin();
-	std::string::const_iterator text_iter = msg.text.begin();
+	if (msg.name.empty()) throw std::length_error("error: name is empty");
+	if (msg.name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
+	if (msg.text.empty()) throw std::length_error("error: message is empty");
 
-	uint8_t namelen = msg.name.length();
-	uint8_t textlen = msg.text.length();
+	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);
 
-	if (namelen == 0)
-	{
-		throw std::length_error("error: name is empty");
-	}
-	else if (textlen == 0)
-	{
-		throw std::length_error("error: text is empty");
-	}
-	else if (namelen > 15)
-	{
-		throw std::length_error("error: name is too long");
-	}
-
+	std::vector<Packet> packets_list;
 	std::vector<uint8_t> buff;
-	uint8_t cur_textlen(0);
-	uint8_t text_pos(0);
-	uint16_t header(0);
-	uint8_t crc(0);
 
-	uint8_t max_packet_len = HEADER_SIZE + namelen + MAX_MSG_LEN;
-	uint8_t num_of_packets = textlen / MAX_MSG_LEN + (textlen % MAX_MSG_LEN != 0); // if textlen % max_msg_len != 0, there is an additional packet
-
-	for (uint8_t packet_n = 0; packet_n < num_of_packets; packet_n++, textlen -= MAX_MSG_LEN, text_iter += cur_textlen)
+	for (auto text : msgs_list) 
 	{
-		cur_textlen = std::min((uint8_t)textlen, (uint8_t)MAX_MSG_LEN);
+		packets_list.push_back({msg.name, text.cbegin(), text.cend()});
+	}
 
-		header = pack_header(FLAG_VAL, namelen, cur_textlen, CRC_PLACEHOLDER);
+	for (auto packet : packets_list) {
+		uint16_t header = pack_header(packet.flag, packet.namelen, packet.msglen, packet.crc4);
 
 		buff.push_back(static_cast<uint8_t>(header >> 8));			// higher byte of header
 		buff.push_back(static_cast<uint8_t>(header & 0x00ff));		// lower byte of header
 
-		buff.insert(buff.end(), name_iter, name_iter + namelen);	// insert name field
-		buff.insert(buff.end(), text_iter, text_iter + cur_textlen);// insert text field
+		buff.insert(buff.end(), packet.name.begin(), packet.name.end());
+		buff.insert(buff.end(), packet.message.begin(), packet.message.end());
 
-		crc = CRC::Calculate(static_cast<void*>(&buff[packet_n * max_packet_len]),
-			HEADER_SIZE + namelen + cur_textlen,
+		uint8_t crc = CRC::Calculate(static_cast<void*>(&buff[buff.size() - (HEADER_SIZE + packet.namelen + packet.msglen)]),
+			HEADER_SIZE + packet.namelen + packet.msglen,
 			CRC::CRC_4_ITU());
-
-		buff[packet_n * max_packet_len + 1] |= crc;  // set the crc value
+			
+		buff[buff.size() - (HEADER_SIZE + packet.namelen + packet.msglen) + 1] |= crc;  // set the crc value
 	}
 
 	return buff;
