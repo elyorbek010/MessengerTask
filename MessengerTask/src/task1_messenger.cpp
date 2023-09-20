@@ -46,108 +46,194 @@ public:
 	}
 };
 
-std::vector<Text> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
-	assert(text_begin != text_end);
-	std::vector<Text> text_splits;
+static std::vector<Text> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
+	std::vector<Text> texts;
 
-	std::string::const_iterator begin = text_begin, end = text_begin;
+	std::string::const_iterator start = text_begin;
+	std::string::const_iterator end = text_begin;
+
 	while (end != text_end) {
-		if (end - begin == split_length) {
-			text_splits.push_back({ begin, end });
-			begin = end;
+		if (distance(start, end) == split_length) {
+			texts.push_back({ start, end });
+			start = end;
 		}
 
 		end++;
 	}
 
-	text_splits.push_back({ begin, end });
+	texts.push_back({ start, end });
 
-	return text_splits;
+	return texts;
 }
 
-class Packet {
-public:
+class Header {
+private:
 	uint8_t flag;
 	uint8_t namelen;
 	uint8_t msglen;
 	uint8_t crc4;
 
+public:
+	Header(uint8_t namelen, uint8_t msglen)
+		: flag(FLAG_VAL)
+		, namelen(namelen)
+		, msglen(msglen)
+		, crc4(0)
+	{ }
+
+	uint8_t size() {
+		return HEADER_SIZE;
+	}
+
+	void set_crc(uint8_t crc4) {
+		this->crc4 = crc4 & N_BIT_MASK(CRC_LEN);
+	}
+	
+	void clear_crc(uint8_t crc4) {
+		this->crc4 = 0;
+	}
+
+	uint16_t get_header() {
+		uint16_t header(0);
+		header <<= FLAG_LEN;
+		header |= flag;
+
+		header <<= NAMELEN_LEN;
+		header |= namelen;
+
+		header <<= TEXTLEN_LEN;
+		header |= msglen;
+
+		header <<= CRC_LEN;
+		header |= crc4;
+
+		return header;
+	}
+
+	uint8_t get_header_h() {
+		uint16_t header = this->get_header();
+
+		return static_cast<uint8_t>(header >> __CHAR_BIT__);
+	}
+
+	uint8_t get_header_l() {
+		uint16_t header = this->get_header();
+
+		return static_cast<uint8_t>(header & N_BIT_MASK(__CHAR_BIT__));
+	}
+
+
+};
+
+class Payload {
+private:
 	std::string name;
 	std::string message;
-	
-public:
 
-	Packet(std::string name, std::string::const_iterator msg_begin, std::string::const_iterator msg_end) {
+public:
+	Payload(){}
+
+	uint8_t size() {
+		return name.size() + message.size();
+	}
+
+	// what's better, setting name, msg in constructor or through setters ? anyway they're set only once
+	void set_name(std::string name) {
 		if (name.empty()) throw std::length_error("error: name cannot be empty");
 		if (name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
-		if (msg_end - msg_begin > MAX_MSG_LEN) throw std::length_error("error: message is too long");
+
+		this->name = name;
+	}
+
+	void set_message(std::string::const_iterator msg_begin, std::string::const_iterator msg_end) {
+		if (distance(msg_begin, msg_end) > MAX_MSG_LEN) throw std::length_error("error: message is too long");
 		if (msg_end == msg_begin) throw std::length_error("error: message cannot be empty");
 
-		flag = FLAG_VAL;
-		this->name = name;
-		namelen = name.size();
-		message.assign(msg_begin, msg_end);
-		msglen = message.size();
-		crc4 = CRC_PLACEHOLDER;
+		this->message.assign(msg_begin, msg_end);
+	}
+
+	std::string::iterator name_begin() {
+		return name.begin();
+	}
+
+	std::string::iterator name_end() {
+		return name.end();
+	}
+
+	std::string::iterator msg_begin() {
+		return message.begin();
+	}
+
+	std::string::iterator msg_end() {
+		return message.end();
+	}
+
+};
+
+class Packet {
+private:
+	Header header;
+	Payload payload;
+
+public:
+	Packet(std::string name, std::string::const_iterator msg_begin, std::string::const_iterator msg_end)
+		: header(name.size(), distance(msg_begin, msg_end))
+	{
+		payload.set_name(name);
+		payload.set_message(msg_begin, msg_end);
+	}
+
+	uint8_t size() {
+		return header.size() + payload.size();
+	}
+
+	std::vector<uint8_t>get_packet() {
+		std::vector<uint8_t> packet;
+
+		packet.push_back(header.get_header_h());	
+		packet.push_back(header.get_header_l());	
+
+		packet.insert(packet.end(), payload.name_begin(), payload.name_end());
+		packet.insert(packet.end(), payload.msg_begin(), payload.msg_end());
+
+		uint8_t crc = CRC::Calculate(static_cast<void*>(&packet[0]),
+			this->size(),
+			CRC::CRC_4_ITU());
+
+		header.set_crc(
+			CRC::Calculate(
+				static_cast<void*>(&packet[0]), // pointer to data
+				this->size(),					// size of data
+				CRC::CRC_4_ITU()				// crc formula
+			)
+		);
+
+		packet[0] = header.get_header_h();
+		packet[1] = header.get_header_l();
+
+		return packet;
 	}
 };
 
-static uint16_t pack_header(uint8_t flag, uint8_t namelen, uint8_t textlen, uint8_t crc4) 
-{
-	assert(flag == FLAG_VAL);
-	assert(namelen > 0 && namelen <= MAX_NAME_LEN);
-	assert(textlen > 0 && textlen <= MAX_MSG_LEN);
-	assert(crc4 == 0);
-
-	uint16_t header(0);
-	header <<= FLAG_LEN;
-	header |= flag;
-
-	header <<= NAMELEN_LEN;
-	header |= namelen;
-
-	header <<= TEXTLEN_LEN;
-	header |= textlen;
-
-	header <<= CRC_LEN;
-	header |= crc4;
-
-	return header;
-}
-
 std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg)
 {
-	if (msg.name.empty()) throw std::length_error("error: name is empty");
-	if (msg.name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
-	if (msg.text.empty()) throw std::length_error("error: message is empty");
-
-	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);
+	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN); // split texts into chunks of length <= MAX_MSG_LEN
 
 	std::vector<Packet> packets_list;
-	std::vector<uint8_t> buff;
-
+	std::vector<uint8_t> res_buff;
+	std::vector<uint8_t> single_packet_buff;
+	
 	for (auto text : msgs_list) 
 	{
-		packets_list.push_back({msg.name, text.cbegin(), text.cend()});
+		packets_list.push_back({msg.name, text.cbegin(), text.cend()}); // create single packets
 	}
 
-	for (auto packet : packets_list) {
-		uint16_t header = pack_header(packet.flag, packet.namelen, packet.msglen, packet.crc4);
-
-		buff.push_back(static_cast<uint8_t>(header >> 8));			// higher byte of header
-		buff.push_back(static_cast<uint8_t>(header & 0x00ff));		// lower byte of header
-
-		buff.insert(buff.end(), packet.name.begin(), packet.name.end());
-		buff.insert(buff.end(), packet.message.begin(), packet.message.end());
-
-		uint8_t crc = CRC::Calculate(static_cast<void*>(&buff[buff.size() - (HEADER_SIZE + packet.namelen + packet.msglen)]),
-			HEADER_SIZE + packet.namelen + packet.msglen,
-			CRC::CRC_4_ITU());
-			
-		buff[buff.size() - (HEADER_SIZE + packet.namelen + packet.msglen) + 1] |= crc;  // set the crc value
+	for (auto single_packet : packets_list) {
+		single_packet_buff = single_packet.get_packet();
+		res_buff.insert(res_buff.end(), single_packet_buff.begin(), single_packet_buff.end());
 	}
 
-	return buff;
+	return res_buff;
 }
 
 static void unpack_header(std::vector<uint8_t>::const_iterator header_iter, uint8_t& flag, uint8_t& namelen, uint8_t& textlen, uint8_t& crc)
