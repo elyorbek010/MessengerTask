@@ -305,45 +305,6 @@ std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg)
 	return res_buff;
 }
 
-class Byte_vec {
-private:
-	std::vector<uint8_t>::iterator begin_iter;
-	std::vector<uint8_t>::iterator end_iter;
-
-public:
-	Byte_vec(std::vector<uint8_t>::iterator begin, std::vector<uint8_t>::iterator end)
-		: begin_iter(begin)
-		, end_iter(end)
-	{ }
-
-	std::vector<uint8_t>::iterator begin() 
-	{
-		return begin_iter;
-	}
-
-	std::vector<uint8_t>::iterator end() 
-	{
-		return end_iter;
-	}
-};
-
-static void unpack_header(std::vector<uint8_t>::const_iterator header_iter, uint8_t& flag, uint8_t& namelen, uint8_t& textlen, uint8_t& crc)
-{
-	uint16_t header = (static_cast<unsigned short>(*header_iter) << 8) + (static_cast<unsigned short>(*(header_iter + 1)));
-
-	crc = header & N_BIT_MASK(CRC_LEN);
-	header >>= CRC_LEN;
-
-	textlen = header & N_BIT_MASK(TEXTLEN_LEN);
-	header >>= TEXTLEN_LEN;
-
-	namelen = header & N_BIT_MASK(NAMELEN_LEN);
-	header >>= NAMELEN_LEN;
-
-	flag = header & N_BIT_MASK(FLAG_LEN);
-	header >>= FLAG_LEN;
-}
-
 static std::vector<Packet> packet_splitter(std::vector<uint8_t>::iterator buff_begin,
 	std::vector<uint8_t>::iterator buff_end)
 {
