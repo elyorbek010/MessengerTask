@@ -211,11 +211,6 @@ private:
 	Header header;
 	Payload payload;
 
-	uint8_t size()
-	{
-		return header.size() + payload.size();
-	}
-
 	void set_buff_crc(std::vector<uint8_t>& buff) {
 		buff[1] |= header.get_crc4();
 	}
@@ -250,6 +245,11 @@ public:
 			CRC::CRC_4_ITU());
 
 		if (calculated_crc4 != header.get_crc4()) throw std::runtime_error("error: invalid crc");
+	}
+
+	uint8_t size()
+	{
+		return header.size() + payload.size();
 	}
 
 	std::string get_name() {
@@ -344,50 +344,25 @@ static void unpack_header(std::vector<uint8_t>::const_iterator header_iter, uint
 	header >>= FLAG_LEN;
 }
 
-static std::vector<Byte_vec> packet_splitter(std::vector<uint8_t>::iterator buff_begin,
-	std::vector<uint8_t>::iterator buff_end,
-	uint8_t max_packet_length) 
+static std::vector<Packet> packet_splitter(std::vector<uint8_t>::iterator buff_begin,
+	std::vector<uint8_t>::iterator buff_end)
 {
-	assert(buff_begin != buff_end);
-	std::vector<Byte_vec> packets;
+	std::vector<Packet> packets;
 
-	std::vector<uint8_t>::iterator start = buff_begin;
-	std::vector<uint8_t>::iterator end = buff_begin;
-
-	while (end != buff_end) {
-		if (distance(start, end) == max_packet_length) {
-			packets.push_back({ start, end });
-			start = end;
-		}
-
-		end++;
+	while (buff_begin != buff_end) {
+		Packet packet(buff_begin);
+		packets.push_back(packet);
+		buff_begin += packet.size();
 	}
-
-	packets.push_back({ start, end });
 
 	return packets;
 }
 
 messenger::msg_t messenger::parse_buff(std::vector<uint8_t>& buff)
 {
-	uint8_t flag(0);
-	uint8_t namelen(0);
-	uint8_t textlen(0);
-	uint8_t header_crc(0);
-	uint8_t max_packet_len(0);
-
 	messenger::msg_t msg("", "");
 
-	unpack_header(buff.begin(), flag, namelen, textlen, header_crc);
-	max_packet_len = HEADER_SIZE + namelen + MAX_MSG_LEN;
-
-	std::vector<Packet> packets_list;
-	std::vector<Byte_vec> split_packets_list = packet_splitter(buff.begin(), buff.end(), max_packet_len);
-
-	for(auto single_packet: split_packets_list)
-	{
-		packets_list.push_back({single_packet.begin()});
-	}
+	std::vector<Packet> packets_list = packet_splitter(buff.begin(), buff.end());
 
 	// set name
 	msg.name = packets_list[0].get_name(); 
