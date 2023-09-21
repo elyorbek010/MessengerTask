@@ -68,10 +68,29 @@ static std::vector<Text> text_splitter(std::string::const_iterator text_begin, s
 
 class Header {
 private:
+	uint16_t header;
 	uint8_t flag;
 	uint8_t namelen;
 	uint8_t msglen;
 	uint8_t crc4;
+
+	void update_header() {
+		uint16_t header(0);
+
+		header <<= FLAG_LEN;
+		header |= flag;
+
+		header <<= NAMELEN_LEN;
+		header |= namelen;
+
+		header <<= TEXTLEN_LEN;
+		header |= msglen;
+
+		header <<= CRC_LEN;
+		header |= crc4;
+
+		this->header = header;
+	}
 
 public:
 	Header(uint8_t namelen, uint8_t msglen)
@@ -79,11 +98,13 @@ public:
 		, namelen(namelen)
 		, msglen(msglen)
 		, crc4(0)
-	{ }
+	{
+		update_header();
+	}
 
 	Header(std::vector<uint8_t>::const_iterator header_iter)
 	{
-		uint16_t header = (static_cast<unsigned short>(*header_iter) << 8) + (static_cast<unsigned short>(*(header_iter + 1)));
+		uint16_t header = (static_cast<unsigned short>(*header_iter) << __CHAR_BIT__) + (static_cast<unsigned short>(*(header_iter + 1)));
 
 		crc4 = header & N_BIT_MASK(CRC_LEN);
 		header >>= CRC_LEN;
@@ -97,6 +118,8 @@ public:
 		flag = header & N_BIT_MASK(FLAG_LEN);
 		header >>= FLAG_LEN;
 
+		update_header();
+
 		if (flag != FLAG_VAL) throw std::runtime_error("error: invalid flag");
 	}
 
@@ -104,41 +127,12 @@ public:
 		return HEADER_SIZE;
 	}
 
-	void set_crc(uint8_t crc4) {
-		this->crc4 = crc4 & N_BIT_MASK(CRC_LEN);
-	}
-
-	uint16_t get_header() {
-		uint16_t header(0);
-		header <<= FLAG_LEN;
-		header |= flag;
-
-		header <<= NAMELEN_LEN;
-		header |= namelen;
-
-		header <<= TEXTLEN_LEN;
-		header |= msglen;
-
-		header <<= CRC_LEN;
-		header |= crc4;
-
-		return header;
-	}
-
 	uint8_t get_header_h() {
-		uint16_t header = this->get_header();
-
 		return static_cast<uint8_t>(header >> __CHAR_BIT__);
 	}
 
 	uint8_t get_header_l() {
-		uint16_t header = this->get_header();
-
 		return static_cast<uint8_t>(header & N_BIT_MASK(__CHAR_BIT__));
-	}
-
-	uint8_t get_flag() {
-		return flag;
 	}
 
 	uint8_t get_namelen() {
@@ -151,6 +145,11 @@ public:
 
 	uint8_t get_crc4() {
 		return crc4;
+	}
+
+	void set_crc(uint8_t crc4) {
+		this->crc4 = crc4 & N_BIT_MASK(CRC_LEN);
+		update_header();
 	}
 };
 
