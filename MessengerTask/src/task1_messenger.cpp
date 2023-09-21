@@ -26,46 +26,6 @@
 
 #define N_BIT_MASK(num) (0xffff >> (16 - num))
 
-class Text {
-private:
-	std::string::const_iterator begin_iter;
-	std::string::const_iterator end_iter;
-
-public:
-	Text(std::string::const_iterator begin, std::string::const_iterator end)
-		: begin_iter(begin)
-		, end_iter(end)
-	{ }
-
-	std::string::const_iterator cbegin() const {
-		return begin_iter;
-	}
-
-	std::string::const_iterator cend() const {
-		return end_iter;
-	}
-};
-
-static std::vector<Text> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
-	std::vector<Text> texts;
-
-	std::string::const_iterator start = text_begin;
-	std::string::const_iterator end = text_begin;
-
-	while (end != text_end) {
-		if (distance(start, end) == split_length) {
-			texts.push_back({ start, end });
-			start = end;
-		}
-
-		end++;
-	}
-
-	texts.push_back({ start, end });
-
-	return texts;
-}
-
 class Header {
 private:
 	uint16_t header;
@@ -165,7 +125,6 @@ public:
 		return name.size() + message.size();
 	}
 
-	// what's better, setting name, msg in constructor or through setters ? anyway they're set only once
 	void set_name(std::string name) {
 		if (name.empty()) throw std::length_error("error: name cannot be empty");
 		if (name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
@@ -239,9 +198,11 @@ public:
 		payload.set_name(name_start, name_start + header.get_namelen());
 		payload.set_message(msg_start, msg_start + header.get_msglen());
 
-		uint8_t calculated_crc4 = CRC::Calculate(static_cast<void*>(&*header_start),
-			this->size(),
-			CRC::CRC_4_ITU());
+		uint8_t calculated_crc4 = CRC::Calculate(
+			static_cast<void*>(&*header_start), // pointer to data
+			this->size(),						// size of the data
+			CRC::CRC_4_ITU()					// crc formula
+		);
 
 		if (calculated_crc4 != header.get_crc4()) throw std::runtime_error("error: invalid crc");
 	}
@@ -259,7 +220,7 @@ public:
 		return std::string(payload.msg_begin(), payload.msg_end());
 	}
 
-	std::vector<uint8_t>get_packet() 
+	std::vector<uint8_t>bufferize() 
 	{
 		std::vector<uint8_t> packet;
 
@@ -269,6 +230,7 @@ public:
 		packet.insert(packet.end(), payload.name_begin(), payload.name_end());
 		packet.insert(packet.end(), payload.msg_begin(), payload.msg_end());
 
+		// update the crc value in the header(previously there was a CRC_PLACEHOLDER)
 		header.set_crc(
 			CRC::Calculate(
 				static_cast<void*>(&packet[0]), // pointer to data
@@ -277,24 +239,64 @@ public:
 			)
 		);
 
+		// update the crc field of the heaader in the current packet
 		set_buff_crc(packet);
 
 		return packet;
 	}
 };
 
+class Text {
+private:
+	std::string::const_iterator begin_iter;
+	std::string::const_iterator end_iter;
+
+public:
+	Text(std::string::const_iterator begin, std::string::const_iterator end)
+		: begin_iter(begin)
+		, end_iter(end)
+	{ }
+
+	std::string::const_iterator cbegin() const {
+		return begin_iter;
+	}
+
+	std::string::const_iterator cend() const {
+		return end_iter;
+	}
+};
+
+static std::vector<Text> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
+	std::vector<Text> texts;
+
+	std::string::const_iterator start = text_begin;
+	std::string::const_iterator end = text_begin;
+
+	while (end != text_end) {
+		if (distance(start, end) == split_length) {
+			texts.push_back({ start, end });
+			start = end;
+		}
+
+		end++;
+	}
+
+	texts.push_back({ start, end }); // insert the last packet when end == text_end
+
+	return texts;
+}
 std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg)
 {
-	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN); // split texts into chunks of length <= MAX_MSG_LEN
+	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);			// split texts into chunks of length <= MAX_MSG_LEN
 
 	std::vector<uint8_t> res_buff;
 	std::vector<uint8_t> single_packet_buff;
 
 	for (auto text : msgs_list) 
 	{
-		Packet single_packet(msg.name, text.cbegin(), text.cend());
-		single_packet_buff = single_packet.get_packet();
-		res_buff.insert(res_buff.end(), single_packet_buff.begin(), single_packet_buff.end());
+		Packet single_packet(msg.name, text.cbegin(), text.cend());								// create a single packet with given name and text
+		single_packet_buff = single_packet.bufferize();											// get bufferized format of the packet
+		res_buff.insert(res_buff.end(), single_packet_buff.cbegin(), single_packet_buff.cend());// append the bufferized packet to the resultant buffer
 	}
 
 	return res_buff;
@@ -321,7 +323,7 @@ messenger::msg_t messenger::parse_buff(std::vector<uint8_t>& buff)
 	std::vector<Packet> packets_list = packet_splitter(buff.begin(), buff.end());
 
 	// set name
-	msg.name = packets_list[0].get_name(); 
+	msg.name = packets_list[0].get_name();
 
 	// set message
 	for (auto packet : packets_list) {
