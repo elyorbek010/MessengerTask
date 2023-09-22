@@ -278,13 +278,14 @@ static std::vector<Text> text_splitter(std::string::const_iterator text_begin, s
 			start = end;
 		}
 
-		end++;
+		end += std::min(split_length, static_cast<uint8_t>(text_end - start));
 	}
 
 	texts.push_back({ start, end }); // insert the last packet when end == text_end
 
 	return texts;
 }
+
 std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg)
 {
 	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);
