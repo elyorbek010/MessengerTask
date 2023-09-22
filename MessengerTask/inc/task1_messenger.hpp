@@ -37,54 +37,54 @@
 namespace messenger
 {
 
-	/**
-	 * Helper type to represent message: sender name, message text
-	 */
-	struct msg_t
-	{
-		msg_t(const std::string& nm, const std::string& txt)
-			: name(nm)
-			, text(txt)
-		{}
-
-		std::string name;	/**< message sender's name */
-		std::string text;	/**< message text */
-	};
-
-
-	/**
-	 * Prepare raw message buffer from specified message
-	 *
-	 * @note raw message buffer may consist from several (at least one) message packets
-	 *
-	 * @param msg message sender's name & message text
-	 * @return buffer with prepared message packets
-	 *
-	 * @sample
-	 *
-	 * // if make_buff succeeded: buff contains required number of packets (for this case 1) to encode specified message
-	 * std::vector<uint8_t> buff = messenger::make_buff( messenger::msg_t("Timur", "Hi") );
-	 *
-	 * // if parse_buff succeeded:
-	 * //	msg.name should be "Timur";
-	 * //	msg.text should be "Hi".
-	 * messenger::msg_t msg = messenger::parse_buff(buff);
+/**
+	* Helper type to represent message: sender name, message text
 	*/
-	std::vector<uint8_t> make_buff(const msg_t& msg);
+struct msg_t
+{
+	msg_t(const std::string& nm, const std::string& txt)
+		: name(nm)
+		, text(txt)
+	{}
+
+	std::string name;	/**< message sender's name */
+	std::string text;	/**< message text */
+};
 
 
-	/**
-	* Parse specified raw message buffer to get original message
+/**
+	* Prepare raw message buffer from specified message
 	*
-	* @param buff raw message buffer
-	* @return parsed message
+	* @note raw message buffer may consist from several (at least one) message packets
 	*
-	* @note In the process of decoding the buffer, it is necessary to verify the value of the fields:
-	*	- FLAG;
-	*	- CRC4.
-	* If their value will be incorrect throw std::runtime_error
-	*/
-	msg_t parse_buff(std::vector<uint8_t>& buff);
+	* @param msg message sender's name & message text
+	* @return buffer with prepared message packets
+	*
+	* @sample
+	*
+	* // if make_buff succeeded: buff contains required number of packets (for this case 1) to encode specified message
+	* std::vector<uint8_t> buff = messenger::make_buff( messenger::msg_t("Timur", "Hi") );
+	*
+	* // if parse_buff succeeded:
+	* //	msg.name should be "Timur";
+	* //	msg.text should be "Hi".
+	* messenger::msg_t msg = messenger::parse_buff(buff);
+*/
+std::vector<uint8_t> make_buff(const msg_t& msg);
+
+
+/**
+* Parse specified raw message buffer to get original message
+*
+* @param buff raw message buffer
+* @return parsed message
+*
+* @note In the process of decoding the buffer, it is necessary to verify the value of the fields:
+*	- FLAG;
+*	- CRC4.
+* If their value will be incorrect throw std::runtime_error
+*/
+msg_t parse_buff(std::vector<uint8_t>& buff);
 
 }	// namespace messenger
 
