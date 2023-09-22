@@ -287,16 +287,16 @@ static std::vector<Text> text_splitter(std::string::const_iterator text_begin, s
 }
 std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg)
 {
-	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);			// split texts into chunks of length <= MAX_MSG_LEN
+	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);
 
 	std::vector<uint8_t> res_buff;
 	std::vector<uint8_t> single_packet_buff;
 
 	for (auto text : msgs_list) 
 	{
-		Packet single_packet(msg.name, text.cbegin(), text.cend());								// create a single packet with given name and text
-		single_packet_buff = single_packet.bufferize();											// get bufferized format of the packet
-		res_buff.insert(res_buff.end(), single_packet_buff.cbegin(), single_packet_buff.cend());// append the bufferized packet to the resultant buffer
+		Packet single_packet(msg.name, text.cbegin(), text.cend());								
+		single_packet_buff = single_packet.bufferize();											
+		res_buff.insert(res_buff.end(), single_packet_buff.cbegin(), single_packet_buff.cend());
 	}
 
 	return res_buff;
