@@ -27,7 +27,8 @@
 
 #define N_BIT_MASK(num) (0xffff >> (16 - num))
 
-class Header {
+class Header 
+{
 private:
 	uint16_t header;
 	uint8_t flag;
@@ -35,7 +36,8 @@ private:
 	uint8_t msglen;
 	uint8_t crc4;
 
-	void update_header() {
+	void update_header() 
+	{
 		uint16_t header(0);
 
 		header <<= FLAG_LEN;
@@ -84,37 +86,45 @@ public:
 		if (flag != FLAG_VAL) throw std::runtime_error("error: invalid flag");
 	}
 
-	uint8_t size() {
+	uint8_t size() 
+	{
 		return HEADER_SIZE;
 	}
 
-	uint8_t get_header_h() {
+	uint8_t get_header_h() 
+	{
 		return static_cast<uint8_t>(header >> __CHAR_BIT__);
 	}
 
-	uint8_t get_header_l() {
+	uint8_t get_header_l() 
+	{
 		return static_cast<uint8_t>(header & N_BIT_MASK(__CHAR_BIT__));
 	}
 
-	uint8_t get_namelen() {
+	uint8_t get_namelen()
+	{
 		return namelen;
 	}
 
-	uint8_t get_msglen() {
+	uint8_t get_msglen() 
+	{
 		return msglen;
 	}
 
-	uint8_t get_crc4() {
+	uint8_t get_crc4() 
+	{
 		return crc4;
 	}
 
-	void set_crc(uint8_t crc4) {
+	void set_crc(uint8_t crc4) 
+	{
 		this->crc4 = crc4 & N_BIT_MASK(CRC_LEN);
 		update_header();
 	}
 };
 
-class Payload {
+class Payload 
+{
 private:
 	std::string name;
 	std::string message;
@@ -122,59 +132,71 @@ private:
 public:
 	Payload(){}
 
-	uint8_t size() {
+	uint8_t size() 
+	{
 		return name.size() + message.size();
 	}
 
-	void set_name(std::string name) {
+	void set_name(std::string name) 
+	{
 		if (name.empty()) throw std::length_error("error: name cannot be empty");
 		if (name.size() > MAX_NAME_LEN) throw std::length_error("error: name is too long");
 
 		this->name = name;
 	}
 
-	void set_name(std::vector<uint8_t>::const_iterator name_begin, std::vector<uint8_t>::const_iterator name_end) {
+	void set_name(std::vector<uint8_t>::const_iterator name_begin, std::vector<uint8_t>::const_iterator name_end) 
+	{
 		name.assign(name_begin, name_end);
 	}
 
-	void set_message(std::string_view::const_iterator msg_begin, std::string_view::const_iterator msg_end) {
+	void set_message(std::string_view::const_iterator msg_begin, std::string_view::const_iterator msg_end) 
+	{
 		if (std::distance(msg_begin, msg_end) > MAX_MSG_LEN) throw std::length_error("error: message is too long");
 		if (msg_end == msg_begin) throw std::length_error("error: message cannot be empty");
 
 		this->message.assign(msg_begin, msg_end);
 	}
 
-	void set_message(std::vector<uint8_t>::const_iterator msg_begin, std::vector<uint8_t>::const_iterator msg_end) {
+	void set_message(std::vector<uint8_t>::const_iterator msg_begin, std::vector<uint8_t>::const_iterator msg_end) 
+	{
 		message.assign(msg_begin, msg_end);
 	}
 
-	std::string::iterator name_begin() {
+	std::string::iterator name_begin() 
+	{
 		return name.begin();
 	}
 
-	std::string::iterator name_end() {
+	std::string::iterator name_end() 
+	{
 		return name.end();
 	}
 
-	std::string::iterator msg_begin() {
+	std::string::iterator msg_begin() 
+	{
 		return message.begin();
 	}
 
-	std::string::iterator msg_end() {
+	std::string::iterator msg_end() 
+	{
 		return message.end();
 	}
 };
 
-class Packet {
+class Packet 
+{
 private:
 	Header header;
 	Payload payload;
 
-	void set_buff_crc(std::vector<uint8_t>& buff) {
+	void set_buff_crc(std::vector<uint8_t>& buff) 
+	{
 		buff[1] |= header.get_crc4();
 	}
 
-	void clear_buff_crc(std::vector<uint8_t>::iterator header_iter) {
+	void clear_buff_crc(std::vector<uint8_t>::iterator header_iter) 
+	{
 		*(header_iter + 1) &= ~N_BIT_MASK(CRC_LEN);
 	}
 
@@ -213,11 +235,13 @@ public:
 		return header.size() + payload.size();
 	}
 
-	std::string get_name() {
+	std::string get_name() 
+	{
 		return std::string(payload.name_begin(), payload.name_end());
 	}
 
-	std::string get_message() {
+	std::string get_message() 
+	{
 		return std::string(payload.msg_begin(), payload.msg_end());
 	}
 
@@ -247,7 +271,10 @@ public:
 	}
 };
 
-static std::vector<std::string_view> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
+static std::vector<std::string_view> text_splitter(std::string::const_iterator text_begin, 
+												std::string::const_iterator text_end, 
+												uint8_t split_length) 
+{
 	std::vector<std::string_view> texts;
 
 	std::string::const_iterator start = text_begin;
@@ -289,7 +316,8 @@ static std::vector<Packet> packet_splitter(std::vector<uint8_t>::iterator buff_b
 {
 	std::vector<Packet> packets;
 
-	while (buff_begin != buff_end) {
+	while (buff_begin != buff_end) 
+	{
 		Packet packet(buff_begin);
 		packets.push_back(packet);
 		buff_begin += packet.size();
@@ -308,7 +336,8 @@ messenger::msg_t messenger::parse_buff(std::vector<uint8_t>& buff)
 	msg.name = packets_list[0].get_name();
 
 	// set message
-	for (auto packet : packets_list) {
+	for (auto packet : packets_list) 
+	{
 		msg.text += packet.get_message();
 	}
 

@@ -27,7 +27,8 @@
 
 #define N_BIT_MASK(num) (0xffff >> (16 - num))
 
-TEST_CASE("MakeBuff_NameLen0", "MakeBuff") {
+TEST_CASE("MakeBuff_NameLen0", "MakeBuff") 
+{
 	std::string name("");
 	std::string text("Hi");
 
@@ -37,14 +38,16 @@ TEST_CASE("MakeBuff_NameLen0", "MakeBuff") {
 	{
 		const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, text));
 	}
-	catch (const std::length_error& error) {
+	catch (const std::length_error& error) 
+	{
 		caught_error = true;
 	}
 
 	REQUIRE(caught_error == true);
 }
 
-TEST_CASE("MakeBuff_NameLen1", "MakeBuff") {
+TEST_CASE("MakeBuff_NameLen1", "MakeBuff") 
+{
 	std::string name("E");
 	std::string text("Hi");
 
@@ -63,7 +66,8 @@ TEST_CASE("MakeBuff_NameLen1", "MakeBuff") {
 	REQUIRE(buff1 == buff2);
 }
 
-TEST_CASE("MakeBuff_NameLen15", "MakeBuff") {
+TEST_CASE("MakeBuff_NameLen15", "MakeBuff") 
+{
 	std::string name("ElyorbekElyorbe");
 	std::string text("Hi");
 
@@ -82,7 +86,8 @@ TEST_CASE("MakeBuff_NameLen15", "MakeBuff") {
 	REQUIRE(buff1 == buff2);
 }
 
-TEST_CASE("MakeBuff_NameLen16", "MakeBuff") {
+TEST_CASE("MakeBuff_NameLen16", "MakeBuff") 
+{
 	std::string name("ElyorbekElyorbek");
 	std::string text("Hi");
 
@@ -92,14 +97,16 @@ TEST_CASE("MakeBuff_NameLen16", "MakeBuff") {
 	{
 		const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, text));
 	}
-	catch (const std::length_error& error) {
+	catch (const std::length_error& error) 
+	{
 		caught_error = true;
 	}
 
 	REQUIRE(caught_error == true);
 }
 
-TEST_CASE("MakeBuff_MsgLen0", "MakeBuff") {
+TEST_CASE("MakeBuff_MsgLen0", "MakeBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("");
 
@@ -109,14 +116,16 @@ TEST_CASE("MakeBuff_MsgLen0", "MakeBuff") {
 	{
 		const std::vector<uint8_t>& buff = messenger::make_buff(messenger::msg_t(name, text));
 	}
-	catch (const std::length_error& error) {
+	catch (const std::length_error& error) 
+	{
 		caught_error = true;
 	}
 
 	REQUIRE(caught_error == true);
 }
 
-TEST_CASE("MakeBuff_MsgLen1", "MakeBuff") {
+TEST_CASE("MakeBuff_MsgLen1", "MakeBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("H");
 
@@ -135,7 +144,8 @@ TEST_CASE("MakeBuff_MsgLen1", "MakeBuff") {
 	REQUIRE(buff1 == buff2);
 }
 
-TEST_CASE("MakeBuff_MsgLen31", "MakeBuff") {
+TEST_CASE("MakeBuff_MsgLen31", "MakeBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("this message contains 31 chars ");
 
@@ -154,7 +164,8 @@ TEST_CASE("MakeBuff_MsgLen31", "MakeBuff") {
 	REQUIRE(buff1 == buff2);
 }
 
-TEST_CASE("MakeBuff_1PacketMaxNameMaxMsg", "MakeBuff") {
+TEST_CASE("MakeBuff_1PacketMaxNameMaxMsg", "MakeBuff") 
+{
 	std::string name("ElyorbekElyorbe");
 	std::string text("this message contains 31 chars ");
 
@@ -173,7 +184,8 @@ TEST_CASE("MakeBuff_1PacketMaxNameMaxMsg", "MakeBuff") {
 	REQUIRE(buff1 == buff2);
 }
 
-TEST_CASE("MakeBuff_MsgLen32", "MakeBuff") {
+TEST_CASE("MakeBuff_MsgLen32", "MakeBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("this message contains 32 chars  ");
 
@@ -211,7 +223,8 @@ TEST_CASE("MakeBuff_MsgLen32", "MakeBuff") {
 	REQUIRE(buff1 == buff2);
 }
 
-TEST_CASE("MakeBuff_MsgLen62", "MakeBuff") {
+TEST_CASE("MakeBuff_MsgLen62", "MakeBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("this message contains 62 chars,this message contains 62 chars ");
 
@@ -246,7 +259,8 @@ TEST_CASE("MakeBuff_MsgLen62", "MakeBuff") {
 	REQUIRE(buff1 == buff2);
 }
 
-TEST_CASE("ParseBuff_WrongFlag", "ParseBuff") {
+TEST_CASE("ParseBuff_WrongFlag", "ParseBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("Hi");
 
@@ -268,7 +282,8 @@ TEST_CASE("ParseBuff_WrongFlag", "ParseBuff") {
 	REQUIRE(caught_error == true);
 }
 
-TEST_CASE("ParseBuff_WrongCRC", "ParseBuff") {
+TEST_CASE("ParseBuff_WrongCRC", "ParseBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("Hi");
 
@@ -282,14 +297,16 @@ TEST_CASE("ParseBuff_WrongCRC", "ParseBuff") {
 	try {
 		const messenger::msg_t& message = messenger::parse_buff(buff_cpy);
 	}
-	catch (const std::runtime_error& error) {
+	catch (const std::runtime_error& error) 
+	{
 		caught_error = true;
 	}
 
 	REQUIRE(caught_error == true);
 }
 
-TEST_CASE("ParseBuff_NameLen1", "ParseBuff") {
+TEST_CASE("ParseBuff_NameLen1", "ParseBuff") 
+{
 	std::string name("E");
 	std::string text("Hi");
 	
@@ -302,7 +319,8 @@ TEST_CASE("ParseBuff_NameLen1", "ParseBuff") {
 	REQUIRE(message.text == text);
 }
 
-TEST_CASE("ParseBuff_NameLen15", "ParseBuff") {
+TEST_CASE("ParseBuff_NameLen15", "ParseBuff") 
+{
 	std::string name("ElyorbekElyorbe");
 	std::string text("Hi");
 
@@ -315,7 +333,8 @@ TEST_CASE("ParseBuff_NameLen15", "ParseBuff") {
 	REQUIRE(message.text == text);
 }
 
-TEST_CASE("ParseBuff_MsgLen1", "ParseBuff") {
+TEST_CASE("ParseBuff_MsgLen1", "ParseBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("H");
 
@@ -328,7 +347,8 @@ TEST_CASE("ParseBuff_MsgLen1", "ParseBuff") {
 	REQUIRE(message.text == text);
 }
 
-TEST_CASE("ParseBuff_MsgLen31", "ParseBuff") {
+TEST_CASE("ParseBuff_MsgLen31", "ParseBuff") 
+{
 	
 	std::string name("Elyorbek");
 	std::string text("this message contains 31 chars ");
@@ -342,7 +362,8 @@ TEST_CASE("ParseBuff_MsgLen31", "ParseBuff") {
 	REQUIRE(message.text == text);
 }
 
-TEST_CASE("ParseBuff_1PacketMaxNameMaxMsg", "ParseBuff") {
+TEST_CASE("ParseBuff_1PacketMaxNameMaxMsg", "ParseBuff") 
+{
 	std::string name("ElyorbekElyorbe");
 	std::string text("this message contains 31 chars ");
 
@@ -355,7 +376,8 @@ TEST_CASE("ParseBuff_1PacketMaxNameMaxMsg", "ParseBuff") {
 	REQUIRE(message.text == text);
 }
 
-TEST_CASE("ParseBuff_MsgLen32", "ParseBuff") {
+TEST_CASE("ParseBuff_MsgLen32", "ParseBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("this message contains 32 chars  ");
 
@@ -368,7 +390,8 @@ TEST_CASE("ParseBuff_MsgLen32", "ParseBuff") {
 	REQUIRE(message.text == text);
 }
 
-TEST_CASE("ParseBuff_MsgLen62", "ParseBuff") {
+TEST_CASE("ParseBuff_MsgLen62", "ParseBuff") 
+{
 	std::string name("Elyorbek");
 	std::string text("this message contains 62 chars,this message contains 62 chars ");
 
