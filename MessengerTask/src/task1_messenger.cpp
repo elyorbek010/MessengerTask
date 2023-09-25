@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <string_view>
 
 #include "task1_messenger.hpp"
 
@@ -136,8 +137,8 @@ public:
 		name.assign(name_begin, name_end);
 	}
 
-	void set_message(std::string::const_iterator msg_begin, std::string::const_iterator msg_end) {
-		if (distance(msg_begin, msg_end) > MAX_MSG_LEN) throw std::length_error("error: message is too long");
+	void set_message(std::string_view::const_iterator msg_begin, std::string_view::const_iterator msg_end) {
+		if (std::distance(msg_begin, msg_end) > MAX_MSG_LEN) throw std::length_error("error: message is too long");
 		if (msg_end == msg_begin) throw std::length_error("error: message cannot be empty");
 
 		this->message.assign(msg_begin, msg_end);
@@ -178,8 +179,8 @@ private:
 	}
 
 public:
-	Packet(std::string name, std::string::const_iterator msg_begin, std::string::const_iterator msg_end)
-		: header(name.size(), distance(msg_begin, msg_end))
+	Packet(std::string name, std::string_view::const_iterator msg_begin, std::string_view::const_iterator msg_end)
+		: header(name.size(), std::distance(msg_begin, msg_end))
 	{
 
 		payload.set_name(name);
@@ -246,28 +247,8 @@ public:
 	}
 };
 
-class Text {
-private:
-	std::string::const_iterator begin_iter;
-	std::string::const_iterator end_iter;
-
-public:
-	Text(std::string::const_iterator begin, std::string::const_iterator end)
-		: begin_iter(begin)
-		, end_iter(end)
-	{ }
-
-	std::string::const_iterator cbegin() const {
-		return begin_iter;
-	}
-
-	std::string::const_iterator cend() const {
-		return end_iter;
-	}
-};
-
-static std::vector<Text> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
-	std::vector<Text> texts;
+static std::vector<std::string_view> text_splitter(std::string::const_iterator text_begin, std::string::const_iterator text_end, uint8_t split_length) {
+	std::vector<std::string_view> texts;
 
 	std::string::const_iterator start = text_begin;
 	std::string::const_iterator end = text_begin;
@@ -288,12 +269,12 @@ static std::vector<Text> text_splitter(std::string::const_iterator text_begin, s
 
 std::vector<uint8_t> messenger::make_buff(const messenger::msg_t& msg)
 {
-	auto msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);
+	std::vector<std::string_view> msgs_list = text_splitter(msg.text.cbegin(), msg.text.cend(), MAX_MSG_LEN);
 
 	std::vector<uint8_t> res_buff;
 	std::vector<uint8_t> single_packet_buff;
 
-	for (auto text : msgs_list) 
+	for (std::string_view text : msgs_list) 
 	{
 		Packet single_packet(msg.name, text.cbegin(), text.cend());								
 		single_packet_buff = single_packet.bufferize();											
